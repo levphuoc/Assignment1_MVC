@@ -1,0 +1,108 @@
+﻿@model FUNewsManagementSystem.BLL.Utilities.PaginatedList<Assignment1_MVC.ViewModels.NewsArticleViewModel>
+@using Assignment1_MVC.Extensions
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    ViewData["Title"] = "News Articles";
+}
+
+<div class="container mt-4">
+    <h2>News Articles</h2>
+
+    <!-- Search Form -->
+    <form asp-action="Search" method="get" class="mb-3">
+        <div class="input-group">
+            <input type="text" name="searchTerm" class="form-control" value="@ViewBag.SearchTerm" placeholder="Search by title or headline" />
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+    </form>
+
+    @if (HttpContextAccessor.HttpContext?.Session?.GetInt32("AccountRole") == 0)
+    {
+        <button class="btn btn-primary create-news">Create News</button>
+
+    }
+
+    <!-- News Table -->
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Headline</th>
+                <th>Created Date</th>
+                <th>Created By</th>
+                @if (User.Identity?.IsAuthenticated == true && IsStaff())
+                {
+                    <th>Actions</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td>@item.NewsTitle</td>
+                    <td>@item.Headline</td>
+                    <td>@item.CreatedDate.ToShortDateString()</td>
+                    <td>@item.CreatedByName</td>
+                    @if (HttpContextAccessor.HttpContext?.Session?.GetInt32("AccountRole") == 0)
+                    {
+                        <td>
+                            <button class="btn btn-warning btn-sm edit-news" data-id="@item.NewsArticleID" data-bs-toggle="modal" data-bs-target="#editModal">Edit</button>
+                            <form asp-action="Delete" asp-route-id="@item.NewsArticleID" method="post" class="d-inline" onsubmit="return confirm('Are you sure?');">
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div class="d-flex justify-content-between">
+        <span>Page @Model.PageNumber of @Model.TotalPages</span>
+        <div>
+            @if (Model.HasPreviousPage)
+            {
+                <a asp-action="Index" asp-route-page="@(Model.PageNumber - 1)" class="btn btn-secondary">Previous</a>
+            }
+            @if (Model.HasNextPage)
+            {
+                <a asp-action="Index" asp-route-page="@(Model.PageNumber + 1)" class="btn btn-secondary">Next</a>
+            }
+        </div>
+    </div>
+
+    <!-- Create Modal -->
+    <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createModalLabel">Create News</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="createModalContent">
+                    <!-- AJAX will load the form here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editModalLabel">Edit News</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="editModalContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    private bool IsStaff() => HttpContextAccessor.HttpContext?.Session.GetInt32("AccountRole") is 0 or 1 or 2;
+}
